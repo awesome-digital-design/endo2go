@@ -75,7 +75,7 @@ async function runHandler(
     return;
   }
 
-  const { images, triggers, dietary } = (req.body ?? {}) as Partial<AnalyzeRequest>;
+  const { images, triggers, dietary, language } = (req.body ?? {}) as Partial<AnalyzeRequest>;
   if (!Array.isArray(images) || images.length === 0) {
     res.status(400).json({ error: "No menu images provided." });
     return;
@@ -92,7 +92,7 @@ async function runHandler(
       {
         role: "user",
         parts: [
-          { text: buildUserText(triggers ?? [], dietary ?? "omnivore") },
+          { text: buildUserText(triggers ?? [], dietary ?? "omnivore", language ?? "nl") },
           ...images.map(toInlinePart),
         ],
       },

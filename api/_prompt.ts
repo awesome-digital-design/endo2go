@@ -15,7 +15,7 @@ DIETARY IS A HARD FILTER. A dish that does not fit the dietary is excluded entir
 - vegetarian: no meat or fish.
 - vegan: no animal products at all, including dairy, butter, egg and honey.
 
-TRIGGER GLOSSARY. When the user has selected a trigger, interpret it BROADLY as follows:
+TRIGGER GLOSSARY. The user describes what they avoid in their own words (free text). Map those words onto the categories below and interpret each BROADLY as follows:
 - "Suiker" → all added sugars and sweeteners (white sugar, honey, coconut-blossom sugar, agave/maple/other syrups, artificial sweeteners) and dishes built on them (desserts, sweetened sauces). Whole fruit is fine.
 - "Gluten / tarwe" → wheat and wheat-based items (wheat bread, wheat pasta, batter, couscous) and hidden wheat in sauces, soy sauce and breaded items. Other grains (spelt, rice, buckwheat, quinoa, corn) are fine.
 - "Zuivel (behalve roomboter)" → milk, cheese, cream, yoghurt, quark, ice cream (incl. goat/sheep). Butter (roomboter) is allowed.
@@ -31,10 +31,12 @@ TRIGGER GLOSSARY. When the user has selected a trigger, interpret it BROADLY as 
 - "Knoflook" → garlic.
 - "Nachtschades" → tomato, bell pepper (paprika), eggplant, and potato. If both "Aardappelen" and "Nachtschades" are selected, both apply.
 
+EMPTY OR SPARSE AVOID INFO. The avoid text is free-form and may be short, vague, or empty. Interpret it generously using the glossary as a guide, but never invent restrictions the user did not express. If the user gives nothing concrete to avoid (or the avoid info is empty), do NOT apply any trigger filtering — fall back to ONLY the universal exclusions and the dietary filter, and treat dishes as suitable unless they hit one of those.
+
 DECISION — BIAS TOWARD HELPFULNESS. Prefer marking a dish "possibly_suitable" with a concrete chef question over excluding it, whenever a realistic restaurant adaptation could make it fit. Exclude only when there is genuinely no realistic path.
 
 ADAPTABLE STAPLES. Even when these look like a "core" ingredient, they are commonly swappable in restaurants, so do NOT exclude for them — instead mark "possibly_suitable" and add a question:
-- Bread (gluten/wheat trigger): bread is acceptable ONLY when it is sourdough (zuurdesem) or gluten-free; regular wheat OR spelt bread is NOT acceptable (do not assume spelt is fine). For any bread-based dish when the user avoids gluten, mark it "possibly_suitable" (not excluded) and ask EXACTLY this question — ask_nl: "Is het brood zuurdesem of is er een glutenvrije optie?" (ask_local: the same question in the menu language). Because acceptability depends on the kitchen's answer (if they have neither, the dish does not fit), keep it "possibly_suitable" with confidence "low" rather than excluding it outright.
+- Bread (gluten/wheat trigger): bread is acceptable ONLY when it is sourdough (zuurdesem) or gluten-free; regular wheat OR spelt bread is NOT acceptable (do not assume spelt is fine). For any bread-based dish when the user avoids gluten, mark it "possibly_suitable" (not excluded) and ask EXACTLY this question (phrased in the user's preferred language; Dutch example: "Is het brood zuurdesem of is er een glutenvrije optie?") as the ask_user entry, with the same question in the menu language as the matching ask_menu entry. Because acceptability depends on the kitchen's answer (if they have neither, the dish does not fit), keep it "possibly_suitable" with confidence "low" rather than excluding it outright.
 - Pasta or grain base: ask if a gluten-free version is available.
 - Cheese / dairy: ask to omit or replace it.
 - Cooking method: ask to grill or bake instead of fry.
@@ -51,13 +53,17 @@ Use confidence "low" or "medium" when you are assuming a staple (like the bread 
 PREPARATION (soft signal). Warm/cooked is preferred over raw, and deep-fried is negative. Let this inform the chef questions (e.g. ask if something can be grilled instead of fried) — NOT a hard verdict beyond the selected triggers.
 
 CLASSIFICATION:
-- "suitable": contains none of the user's triggers, fits the dietary, no change needed. ask_nl MUST be [] (and ask_local MUST be []).
+- "suitable": contains none of the user's triggers, fits the dietary, no change needed. ask_user MUST be [] (and ask_menu MUST be []).
 - "possibly_suitable": triggers present but realistically adjustable (≤3 adjustments). Include one concrete question per adjustment.
+
+LANGUAGE OF THE CHEF QUESTIONS:
+- ask_user: the chef questions written in the user's preferred language (given in the user message).
+- ask_menu: the SAME questions in the menu's own language (menu_lang), with the SAME number of items and the SAME order as ask_user.
+- If the menu's language (menu_lang) is the same language as the user's preferred language, set ask_menu to [] — never output the question twice in the same language.
 
 OUTPUT:
 - name: exactly as written on the menu.
-- desc_nl and ask_nl: in Dutch.
-- ask_local: in the menu's own language (menu_lang), with the SAME number of items and the SAME order as ask_nl.
+- desc_nl: in Dutch.
 - desc_nl: at most 2 sentences, benefits-framing (anti-inflammatory, light to digest, energy/blood flow). Never mention triggers or percentages.
 - confidence: "high" when ingredients are clear from the menu text; "medium"/"low" when inferring hidden ingredients.
 
@@ -67,10 +73,14 @@ EDGE CASES:
 
 Return ONLY data that matches the provided JSON schema.`;
 
-export function buildUserText(triggers: string[], dietary: string): string {
+export function buildUserText(
+  triggers: string[],
+  dietary: string,
+  language: string,
+): string {
   const triggerLine =
     triggers.length > 0
       ? `User avoids: ${triggers.join(", ")}.`
       : `User has no extra triggers.`;
-  return `${triggerLine} Dietary preference: ${dietary}. Analyze the attached menu photo(s) accordingly.`;
+  return `${triggerLine} Dietary preference: ${dietary}. The user's preferred language is: ${language}. Analyze the attached menu photo(s) accordingly.`;
 }
